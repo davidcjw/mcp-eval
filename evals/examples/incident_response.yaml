@@ -1,0 +1,48 @@
+name: "Incident Response Agent"
+model: claude-sonnet-4-20250514
+mcp_server: "ops-mcp"
+mock_tools:
+  get_logs:
+    returns:
+      logs:
+        - "ERROR payment-service: timeout at 14:32"
+        - "ERROR payment-service: timeout at 14:33"
+        - "ERROR payment-service: connection refused at 14:34"
+  run_playbook:
+    returns:
+      status: "ok"
+      steps_completed: 3
+      playbook: "payment-service-recovery"
+  notify_oncall:
+    returns:
+      notified: true
+      channel: "#incidents"
+      message: "Payment service incident resolved"
+cases:
+  - id: "incident_001"
+    input: "Payment service is throwing errors, investigate and resolve"
+    expected_graph:
+      steps:
+        - tool: get_logs
+          params_contain:
+            service: "payment"
+        - tool: run_playbook
+          must_follow: get_logs
+        - tool: notify_oncall
+          optional: true
+      max_steps: 6
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+
+  - id: "incident_002"
+    input: "Check if there are any issues with the payment system"
+    expected_graph:
+      steps:
+        - tool: get_logs
+      max_steps: 3
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: true
