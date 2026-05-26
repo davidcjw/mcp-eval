@@ -67,7 +67,7 @@ def test_single_report_shows_pass_fail(tmp_path):
     out = tmp_path / "report.html"
     HtmlReporter().write_report(_make_run_result("claude-haiku-4-5-20251001", 0.0), out)
     html = out.read_text()
-    assert "FAIL" in html or "fail" in html.lower()
+    assert "FAIL" in html
 
 
 def test_single_report_shows_error(tmp_path):

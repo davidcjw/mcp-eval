@@ -1,5 +1,6 @@
 # mcpeval/html_reporter.py
 from __future__ import annotations
+import html
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -42,10 +43,10 @@ def _case_rows(case_results: list[CaseResult]) -> str:
         score_cls = _score_class(cr.graph_match_score)
         rule = f"{cr.rule_score:.2f}" if cr.rule_score is not None else "—"
         judge = f"{cr.llm_judge_score:.2f}" if cr.llm_judge_score is not None else "—"
-        error_cell = f'<span class="error">{cr.error}</span>' if cr.error else ""
+        error_cell = f'<span class="error">{html.escape(str(cr.error))}</span>' if cr.error else ""
         rows.append(
             f"<tr>"
-            f"<td>{cr.case_id}</td>"
+            f"<td>{html.escape(str(cr.case_id))}</td>"
             f'<td class="{status_cls}">{status_txt}</td>'
             f'<td class="{score_cls}">{cr.graph_match_score:.2f}</td>'
             f"<td>{rule}</td>"
@@ -82,8 +83,8 @@ class HtmlReporter:
         score_cls = _score_class(result.overall_score)
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         body = (
-            f"<h1>{result.eval_suite}</h1>"
-            f'<div class="meta">Model: {result.model} &nbsp;|&nbsp; Generated: {now}'
+            f"<h1>{html.escape(result.eval_suite)}</h1>"
+            f'<div class="meta">Model: {html.escape(result.model)} &nbsp;|&nbsp; Generated: {now}'
             + (f" &nbsp;|&nbsp; Run ID: {result.run_id}" if result.run_id else "")
             + "</div>"
             f'<div class="summary">'
@@ -95,14 +96,14 @@ class HtmlReporter:
             f'<div class="section-title">Cases</div>'
             + _case_table(result.case_results)
         )
-        return _html_page(result.eval_suite, body)
+        return _html_page(html.escape(result.eval_suite), body)
 
     def _render_multi(self, results: list[RunResult]) -> str:
-        suite_name = results[0].eval_suite if results else "Eval Results"
+        suite_name = html.escape(results[0].eval_suite) if results else "Eval Results"
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         overview_rows = "\n".join(
             f"<tr>"
-            f"<td>{r.model}</td>"
+            f"<td>{html.escape(r.model)}</td>"
             f"<td>{r.passed}/{r.total_cases}</td>"
             f'<td class="{_score_class(r.overall_score)}">{r.overall_score:.2f}</td>'
             f"</tr>"
@@ -115,7 +116,7 @@ class HtmlReporter:
         per_model = ""
         for r in results:
             per_model += (
-                f'<div class="section-title">{r.model}</div>'
+                f'<div class="section-title">{html.escape(r.model)}</div>'
                 + _case_table(r.case_results)
             )
         body = (
@@ -132,7 +133,7 @@ def _html_page(title: str, body: str) -> str:
     return (
         "<!DOCTYPE html><html lang='en'><head>"
         f"<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        f"<title>{title}</title>"
+        f"<title>{html.escape(title)}</title>"
         f"<style>{_CSS}</style>"
         f"</head><body>{body}</body></html>"
     )
