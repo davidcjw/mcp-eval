@@ -57,3 +57,34 @@ def test_print_case_detail_shows_score(passing_case_result):
 def test_default_console_created_if_none():
     reporter = Reporter(console=None)
     assert reporter._console is not None
+
+
+def test_print_multi_model_summary_shows_all_models():
+    console, buf = _make_console()
+    reporter = Reporter(console=console)
+    results = [
+        RunResult(
+            run_id=None,
+            eval_suite="Suite",
+            model="claude-haiku-4-5-20251001",
+            total_cases=2,
+            passed=2,
+            failed=0,
+            overall_score=1.0,
+        ),
+        RunResult(
+            run_id=None,
+            eval_suite="Suite",
+            model="claude-sonnet-4-6",
+            total_cases=2,
+            passed=1,
+            failed=1,
+            overall_score=0.5,
+        ),
+    ]
+    reporter.print_multi_model_summary(results)
+    output = buf.getvalue()
+    assert "claude-haiku-4-5-20251001" in output
+    assert "claude-sonnet-4-6" in output
+    assert "1.00" in output
+    assert "0.50" in output

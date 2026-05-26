@@ -38,6 +38,27 @@ class Reporter:
 
         self._console.print(table)
 
+    def print_multi_model_summary(self, results: list[RunResult]) -> None:
+        self._console.print("\n[bold]Multi-Model Comparison[/bold]")
+        self._console.print(f"[bold]Suite:[/bold] {results[0].eval_suite if results else ''}")
+
+        table = Table(box=box.SIMPLE, show_header=True, header_style="bold")
+        table.add_column("Model", style="cyan")
+        table.add_column("Passed", justify="right")
+        table.add_column("Failed", justify="right")
+        table.add_column("Score", justify="right")
+
+        for result in results:
+            score_style = "green" if result.overall_score >= 0.8 else "yellow" if result.overall_score >= 0.5 else "red"
+            table.add_row(
+                result.model,
+                str(result.passed),
+                str(result.failed),
+                f"[{score_style}]{result.overall_score:.2f}[/{score_style}]",
+            )
+
+        self._console.print(table)
+
     def print_case_detail(self, cr: CaseResult) -> None:
         status = "[green]PASS[/green]" if cr.passed else "[red]FAIL[/red]"
         self._console.print(f"\n[bold]Case:[/bold] {cr.case_id}  {status}")

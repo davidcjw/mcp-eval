@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 from click.testing import CliRunner
 from mcpeval.cli import cli
 from mcpeval.runner import RunResult, CaseResult
+import asyncio
 
 
 def test_help_exits_zero():
@@ -104,3 +105,62 @@ def test_run_exits_zero_without_threshold(tmp_path):
         with patch("mcpeval.cli.ResultStore"):
             result = runner.invoke(cli, ["run", suite_path, "--db", ":memory:"])
     assert result.exit_code == 0
+
+
+def test_run_models_flag_runs_per_model(tmp_path):
+    runner = CliRunner()
+    suite_path = _make_suite_yaml(tmp_path)
+    call_count = 0
+
+    async def fake_run_suite(suite):
+        nonlocal call_count
+        call_count += 1
+        return _make_run_result(1.0)
+
+    with patch("mcpeval.cli.EvalRunner") as MockRunner:
+        mock_instance = MockRunner.return_value
+        mock_instance.run_suite = fake_run_suite
+        with patch("mcpeval.cli.ResultStore"):
+            result = runner.invoke(
+                cli,
+                ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"],
+            )
+    assert result.exit_code == 0
+    assert call_count == 2
+
+
+def test_run_models_alias_resolved(tmp_path):
+    """haiku/sonnet/opus shorthand aliases expand to full model IDs."""
+    runner = CliRunner()
+    suite_path = _make_suite_yaml(tmp_path)
+    seen_models: list[str] = []
+
+    async def fake_run_suite(suite):
+        seen_models.append(suite.model)
+        return _make_run_result(1.0)
+
+    with patch("mcpeval.cli.EvalRunner") as MockRunner:
+        mock_instance = MockRunner.return_value
+        mock_instance.run_suite = fake_run_suite
+        with patch("mcpeval.cli.ResultStore"):
+            runner.invoke(cli, ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"])
+    assert seen_models == ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"]
+
+
+def test_run_models_exits_one_when_worst_score_below_threshold(tmp_path):
+    runner = CliRunner()
+    suite_path = _make_suite_yaml(tmp_path)
+    scores = [1.0, 0.4]
+
+    async def fake_run_suite(suite):
+        return _make_run_result(scores.pop(0))
+
+    with patch("mcpeval.cli.EvalRunner") as MockRunner:
+        mock_instance = MockRunner.return_value
+        mock_instance.run_suite = fake_run_suite
+        with patch("mcpeval.cli.ResultStore"):
+            result = runner.invoke(
+                cli,
+                ["run", suite_path, "--models", "haiku,sonnet", "--threshold", "0.8", "--db", ":memory:"],
+            )
+    assert result.exit_code == 1
