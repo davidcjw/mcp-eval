@@ -26,7 +26,12 @@ def _register_tools(server: FastMCP, tool_defs: list[MockToolDef]) -> None:
             return {}
 
         base = _StubTool.from_function(_placeholder, name=tdef.name)
-        stub = base.model_copy(update={"stub_returns": tdef.returns})
+        update: dict = {"stub_returns": tdef.returns}
+        if tdef.description:
+            update["description"] = tdef.description
+        if tdef.parameters:
+            update["parameters"] = tdef.parameters
+        stub = base.model_copy(update=update)
         server.add_tool(stub)
 
 

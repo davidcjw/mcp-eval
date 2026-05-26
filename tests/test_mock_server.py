@@ -65,3 +65,23 @@ async def test_mock_server_each_tool_returns_correct_value():
         result_b = await client.call_tool("tool_b", {})
     assert result_a is not None
     assert result_b is not None
+
+
+@pytest.mark.asyncio
+async def test_tool_description_propagates():
+    tools = [MockToolDef(
+        name="get_logs",
+        returns={"logs": []},
+        description="Retrieve service logs",
+        parameters={
+            "type": "object",
+            "properties": {"service": {"type": "string"}},
+            "required": ["service"],
+        },
+    )]
+    server = MockMCPServer("test", tools)
+    async with server.start() as (client, _capture):
+        listed = await client.list_tools()
+        tool = next(t for t in listed if t.name == "get_logs")
+        assert tool.description == "Retrieve service logs"
+        assert tool.inputSchema["properties"]["service"]["type"] == "string"
