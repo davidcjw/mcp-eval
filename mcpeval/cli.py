@@ -1,6 +1,5 @@
 # mcpeval/cli.py
 from __future__ import annotations
-import sys
 import asyncio
 import dataclasses
 
@@ -60,7 +59,7 @@ def run(
         if threshold is not None:
             worst = min(r.overall_score for r in run_results)
             if worst < threshold:
-                sys.exit(1)
+                raise click.exceptions.Exit(1)
     else:
         run_result = asyncio.run(runner.run_suite(suite))
         reporter.print_run_summary(run_result)
@@ -68,4 +67,4 @@ def run(
             from mcpeval.html_reporter import HtmlReporter
             HtmlReporter().write_report(run_result, output)
         if threshold is not None and run_result.overall_score < threshold:
-            sys.exit(1)
+            raise click.exceptions.Exit(1)

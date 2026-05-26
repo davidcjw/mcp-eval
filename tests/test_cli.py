@@ -22,3 +22,4 @@ def test_run_missing_file_exits_nonzero(tmp_path):
     runner = CliRunner()
     result = runner.invoke(cli, ["run", str(tmp_path / "no_such.yaml")])
     assert result.exit_code != 0
+    assert "no_such.yaml" in result.output
