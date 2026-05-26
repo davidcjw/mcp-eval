@@ -79,6 +79,13 @@ class LLMJudgeEvaluator:
         )
 
         text = response.content[0].text.strip()
+        # Strip markdown code fences that some models add (```json ... ```)
+        if text.startswith("```"):
+            lines = text.splitlines()
+            text = "\n".join(
+                line for line in lines
+                if not line.strip().startswith("```")
+            ).strip()
         try:
             data = json.loads(text)
             score = float(data["score"])

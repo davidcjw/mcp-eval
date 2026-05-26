@@ -110,6 +110,23 @@ async def test_evaluate_includes_tool_calls_in_prompt():
 
 
 @pytest.mark.asyncio
+async def test_evaluate_handles_markdown_wrapped_json():
+    """Some models wrap JSON in ```json ... ``` code fences — must still parse."""
+    judge = LLMJudgeEvaluator(criteria="x", model="m", api_key="test-key")
+    import json as _json
+    block = MagicMock()
+    block.text = "```json\n" + _json.dumps({"score": 0.85, "reasoning": "Good job."}) + "\n```"
+    response = MagicMock()
+    response.content = [block]
+    with patch("mcpeval.evaluators.llm_judge.AsyncAnthropic") as mock_cls:
+        mock_cls.return_value.messages.create = AsyncMock(return_value=response)
+        result = await judge.evaluate("output", "input", [])
+    assert result.score == pytest.approx(0.85)
+    assert result.reasoning == "Good job."
+    assert result.passed is True
+
+
+@pytest.mark.asyncio
 async def test_evaluate_default_threshold_is_0_7():
     judge = LLMJudgeEvaluator(criteria="x", model="m", api_key="test-key")
     with patch("mcpeval.evaluators.llm_judge.AsyncAnthropic") as mock_cls:
