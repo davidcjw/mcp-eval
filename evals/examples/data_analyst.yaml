@@ -1,0 +1,156 @@
+name: "Data Analyst Agent"
+model: claude-haiku-4-5-20251001
+mcp_server: "analytics-mcp"
+
+mock_tools:
+  get_schema:
+    description: "Return the column schema for a database table. Call this before writing SQL to avoid column name errors."
+    parameters:
+      type: object
+      properties:
+        table_name:
+          type: string
+      required: [table_name]
+    returns:
+      table: "orders"
+      columns:
+        - {name: order_id,    type: uuid}
+        - {name: customer_id, type: uuid}
+        - {name: region,      type: varchar}
+        - {name: amount,      type: numeric}
+        - {name: created_at,  type: timestamptz}
+        - {name: status,      type: varchar}
+
+  run_sql:
+    description: "Execute a read-only SQL SELECT query. Returns up to 1000 rows. Do not use for writes."
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: "Valid SQL SELECT statement"
+        database:
+          type: string
+          description: "Target database name (e.g. 'production', 'analytics')"
+      required: [query, database]
+    returns:
+      rows:
+        - {region: "APAC",     total_revenue: 284500.00, order_count: 1203}
+        - {region: "EMEA",     total_revenue: 412800.00, order_count: 1891}
+        - {region: "Americas", total_revenue: 521000.00, order_count: 2344}
+      row_count: 3
+      execution_ms: 142
+
+  create_chart:
+    description: "Generate a chart from row data. Returns a URL to the rendered image."
+    parameters:
+      type: object
+      properties:
+        data:
+          type: array
+          description: "Array of row objects to visualise"
+        chart_type:
+          type: string
+          enum: [bar, line, pie]
+        title:
+          type: string
+        x_field:
+          type: string
+          description: "Column name to use for the x-axis or labels"
+        y_field:
+          type: string
+          description: "Column name to use for the y-axis or values"
+      required: [data, chart_type, title, x_field, y_field]
+    returns:
+      chart_url: "https://charts.internal/q8r2t.png"
+      type: "bar"
+
+  export_csv:
+    description: "Export a dataset to a CSV file. Returns the file path."
+    parameters:
+      type: object
+      properties:
+        data:
+          type: array
+        filename:
+          type: string
+          description: "Desired filename without extension (e.g. 'regional_revenue_q2')"
+      required: [data, filename]
+    returns:
+      path: "/exports/regional_revenue_q2.csv"
+      rows_written: 3
+
+cases:
+  - id: "regional_revenue_chart"
+    input: "Show me a bar chart of total revenue by region from the orders table"
+    expected_graph:
+      steps:
+        - tool: get_schema
+          params_contain:
+            table_name: "orders"
+        - tool: run_sql
+          must_follow: get_schema
+        - tool: create_chart
+          must_follow: run_sql
+      max_steps: 5
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: llm_judge
+        criteria: "Did the agent check the schema before writing SQL, query revenue by region, and produce a bar chart of the results?"
+        threshold: 0.7
+
+  - id: "simple_row_count"
+    input: "How many orders are in the orders table in the production database?"
+    expected_graph:
+      steps:
+        - tool: run_sql
+      max_steps: 3
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: true
+      - type: rule
+        checks:
+          - regex: "\\d+"    # response must contain a number
+        threshold: 1.0
+
+  - id: "export_regional_breakdown"
+    input: "Export the revenue breakdown by region from the orders table to a CSV file"
+    expected_graph:
+      steps:
+        - tool: run_sql
+        - tool: export_csv
+          must_follow: run_sql
+      max_steps: 4
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: rule
+        checks:
+          - contains: ".csv"
+        threshold: 1.0
+      - type: llm_judge
+        criteria: "Did the agent confirm the data was exported and tell the user where to find the file?"
+        threshold: 0.7
+
+  - id: "schema_aware_query"
+    input: "What are the column names in the orders table?"
+    expected_graph:
+      steps:
+        - tool: get_schema
+          params_contain:
+            table_name: "orders"
+      max_steps: 2
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: true
+      - type: rule
+        checks:
+          - contains: "region"
+          - contains: "amount"
+          - contains: "created_at"
+        threshold: 1.0

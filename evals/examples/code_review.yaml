@@ -1,0 +1,194 @@
+name: "Code Review Agent"
+model: claude-haiku-4-5-20251001
+mcp_server: "github-mcp"
+
+mock_tools:
+  get_pr_diff:
+    description: "Fetch the full diff for a pull request, including file names and changed lines."
+    parameters:
+      type: object
+      properties:
+        pr_number:
+          type: integer
+      required: [pr_number]
+    returns:
+      pr_number: 42
+      title: "Add password reset endpoint"
+      author: "jsmith"
+      files_changed: 3
+      diff: |
+        +++ b/auth/reset.py
+        @@ -0,0 +1,8 @@
+        +def reset_password(token: str, new_password: str):
+        +    user = db.query(f"SELECT * FROM users WHERE token = '{token}'")
+        +    if not user:
+        +        raise ValueError("Invalid token")
+        +    user.password = hash_password(new_password)
+        +    db.save(user)
+
+  run_linter:
+    description: "Run static analysis on a list of changed files. Returns issues with file, line, rule, and message."
+    parameters:
+      type: object
+      properties:
+        files:
+          type: array
+          items: {type: string}
+          description: "List of file paths to lint"
+      required: [files]
+    returns:
+      issues:
+        - {file: "auth/reset.py", line: 2, rule: "S608", severity: "error",   message: "Possible SQL injection via string interpolation"}
+        - {file: "auth/reset.py", line: 5, rule: "S324", severity: "warning", message: "Use of weak hash function 'hash'"}
+      error_count: 1
+      warning_count: 1
+
+  check_test_coverage:
+    description: "Return the test coverage delta introduced by a pull request."
+    parameters:
+      type: object
+      properties:
+        pr_number:
+          type: integer
+      required: [pr_number]
+    returns:
+      pr_number: 42
+      coverage_before: 78.4
+      coverage_after: 76.9
+      delta: -1.5
+      uncovered_lines:
+        - "auth/reset.py:2"
+        - "auth/reset.py:5"
+
+  search_codebase:
+    description: "Search the codebase for a pattern. Useful for finding similar code or usages of a function."
+    parameters:
+      type: object
+      properties:
+        pattern:
+          type: string
+          description: "String or regex pattern to search for"
+        path:
+          type: string
+          description: "Limit search to this directory (optional)"
+      required: [pattern]
+    returns:
+      matches:
+        - {file: "auth/login.py",   line: 14, snippet: "db.query(f\"SELECT * FROM users WHERE email = '{email}'\")"}
+        - {file: "auth/signup.py",  line: 9,  snippet: "db.query(f\"SELECT * FROM users WHERE username = '{username}'\")"}
+      match_count: 2
+
+  post_review_comment:
+    description: "Post a review comment on the pull request. Use severity='blocking' for issues that must be fixed before merge."
+    parameters:
+      type: object
+      properties:
+        pr_number:
+          type: integer
+        body:
+          type: string
+          description: "Markdown-formatted review comment"
+        severity:
+          type: string
+          enum: [info, warning, blocking]
+      required: [pr_number, body, severity]
+    returns:
+      comment_id: 9912
+      url: "https://github.com/org/repo/pull/42#issuecomment-9912"
+
+cases:
+  - id: "security_focused_review"
+    input: "Review PR #42 and flag any security issues"
+    expected_graph:
+      steps:
+        - tool: get_pr_diff
+          params_contain:
+            pr_number: 42
+        - tool: run_linter
+          must_follow: get_pr_diff
+        - tool: post_review_comment
+          must_follow: run_linter
+          params_contain:
+            pr_number: 42
+            severity: "blocking"
+      max_steps: 6
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: rule
+        checks:
+          - contains: "SQL injection"
+        threshold: 1.0
+      - type: llm_judge
+        criteria: "Did the agent identify the SQL injection vulnerability, mark the review as blocking, and explain how to fix it (e.g. parameterised queries)?"
+        threshold: 0.7
+
+  - id: "coverage_check"
+    input: "Does PR #42 have adequate test coverage?"
+    expected_graph:
+      steps:
+        - tool: get_pr_diff
+          params_contain:
+            pr_number: 42
+        - tool: check_test_coverage
+          must_follow: get_pr_diff
+          params_contain:
+            pr_number: 42
+      max_steps: 4
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: rule
+        checks:
+          - regex: "-?1\\.5"    # coverage delta from mock
+        threshold: 1.0
+      - type: llm_judge
+        criteria: "Did the agent clearly state that test coverage dropped, by how much, and which lines are uncovered?"
+        threshold: 0.7
+
+  - id: "pattern_spread_check"
+    input: "The SQL in PR #42 looks suspicious — check if this pattern exists elsewhere in the codebase"
+    expected_graph:
+      steps:
+        - tool: get_pr_diff
+          params_contain:
+            pr_number: 42
+        - tool: search_codebase
+          must_follow: get_pr_diff
+        - tool: post_review_comment
+          optional: true
+          must_follow: search_codebase
+      max_steps: 5
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: llm_judge
+        criteria: "Did the agent search for similar SQL patterns and report that the same vulnerability exists in auth/login.py and auth/signup.py?"
+        threshold: 0.7
+
+  - id: "full_review"
+    input: "Do a full review of PR #42 — check the diff, run linting, check test coverage, then post a summary comment"
+    expected_graph:
+      steps:
+        - tool: get_pr_diff
+          params_contain:
+            pr_number: 42
+        - tool: run_linter
+          must_follow: get_pr_diff
+        - tool: check_test_coverage
+          must_follow: get_pr_diff
+        - tool: post_review_comment
+          must_follow: run_linter
+          params_contain:
+            pr_number: 42
+      max_steps: 7
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: llm_judge
+        criteria: "Did the agent produce a comprehensive review covering security issues, code quality warnings, and the test coverage drop, with a clear recommendation on whether to merge?"
+        threshold: 0.7

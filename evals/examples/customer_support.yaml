@@ -1,0 +1,142 @@
+name: "Customer Support Agent"
+model: claude-haiku-4-5-20251001
+mcp_server: "support-mcp"
+
+mock_tools:
+  lookup_order:
+    description: "Look up an order by ID. Returns current status, items, estimated delivery, and customer contact info."
+    parameters:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: "Order ID in the format ORD-XXXXX"
+      required: [order_id]
+    returns:
+      order_id: "ORD-12345"
+      status: "delayed"
+      estimated_delivery: "2026-06-03"
+      customer_email: "alice@example.com"
+      items:
+        - name: "Wireless Headphones"
+          qty: 1
+          price: 89.99
+
+  process_refund:
+    description: "Initiate a refund for an order. Only call after looking up the order to confirm it exists."
+    parameters:
+      type: object
+      properties:
+        order_id:
+          type: string
+        reason:
+          type: string
+          description: "Reason for the refund (e.g. defective, not_as_described, changed_mind)"
+      required: [order_id, reason]
+    returns:
+      refund_id: "REF-9981"
+      status: "approved"
+      amount: 89.99
+      eta_days: 3
+
+  escalate_to_human:
+    description: "Escalate a case to a human support agent. Use when the customer is distressed, threatening legal action, or the issue is outside normal policy."
+    parameters:
+      type: object
+      properties:
+        order_id:
+          type: string
+        reason:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+      required: [order_id, reason, priority]
+    returns:
+      ticket_id: "TKT-4421"
+      assigned_to: "Sarah (Tier 2 Support)"
+      estimated_response_hours: 2
+
+  send_customer_email:
+    description: "Send a follow-up email to the customer. Use to confirm resolutions or share next steps."
+    parameters:
+      type: object
+      properties:
+        email:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+      required: [email, subject, body]
+    returns:
+      sent: true
+      message_id: "msg_881abc"
+
+cases:
+  - id: "refund_defective_item"
+    input: "Customer says their headphones from order ORD-12345 arrived broken and they want a refund"
+    expected_graph:
+      steps:
+        - tool: lookup_order
+          params_contain:
+            order_id: "ORD-12345"
+        - tool: process_refund
+          must_follow: lookup_order
+          params_contain:
+            order_id: "ORD-12345"
+        - tool: send_customer_email
+          optional: true
+          must_follow: process_refund
+      max_steps: 5
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: rule
+        checks:
+          - contains: "refund"
+          - not_contains: "I cannot"
+          - not_contains: "I'm unable"
+        threshold: 1.0
+      - type: llm_judge
+        criteria: "Did the agent confirm a refund was processed and clearly communicate the outcome (refund amount, timeline) to the customer?"
+        threshold: 0.7
+
+  - id: "order_status_inquiry"
+    input: "Where is my order ORD-12345? It was supposed to arrive yesterday."
+    expected_graph:
+      steps:
+        - tool: lookup_order
+          params_contain:
+            order_id: "ORD-12345"
+      max_steps: 2
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: true
+      - type: rule
+        checks:
+          - contains: "2026-06-03"    # estimated_delivery from mock
+          - contains: "delayed"
+        threshold: 1.0
+
+  - id: "chargeback_threat_escalation"
+    input: "Customer on order ORD-12345 is furious, says they've already filed a chargeback with their bank and will leave a public review"
+    expected_graph:
+      steps:
+        - tool: lookup_order
+          params_contain:
+            order_id: "ORD-12345"
+        - tool: escalate_to_human
+          must_follow: lookup_order
+          params_contain:
+            priority: "high"
+      max_steps: 4
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
+      - type: llm_judge
+        criteria: "Did the agent recognise this as a high-priority situation requiring human escalation rather than attempting to resolve a chargeback autonomously?"
+        threshold: 0.7
