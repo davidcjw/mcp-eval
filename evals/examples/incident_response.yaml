@@ -3,17 +3,44 @@ model: claude-haiku-4-5-20251001
 mcp_server: "ops-mcp"
 mock_tools:
   get_logs:
+    description: "Retrieve recent logs for a service. Call this first to diagnose issues."
+    parameters:
+      type: object
+      properties:
+        service:
+          type: string
+          description: Name of the service to fetch logs for (e.g. 'payment-service')
+      required: [service]
     returns:
       logs:
         - "ERROR payment-service: timeout at 14:32"
         - "ERROR payment-service: timeout at 14:33"
         - "ERROR payment-service: connection refused at 14:34"
   run_playbook:
+    description: "Execute a recovery playbook for a service. Requires knowing which service is affected."
+    parameters:
+      type: object
+      properties:
+        playbook:
+          type: string
+          description: Name of the playbook to run
+        service:
+          type: string
+          description: Service name the playbook targets
+      required: [playbook, service]
     returns:
       status: "ok"
       steps_completed: 3
       playbook: "payment-service-recovery"
   notify_oncall:
+    description: "Send a notification to the on-call channel with an incident summary."
+    parameters:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Incident summary message to send
+      required: [message]
     returns:
       notified: true
       channel: "#incidents"
@@ -24,6 +51,8 @@ cases:
     expected_graph:
       steps:
         - tool: get_logs
+          params_contain:
+            service: "payment-service"
         - tool: run_playbook
           must_follow: get_logs
         - tool: notify_oncall
@@ -33,6 +62,11 @@ cases:
     evaluators:
       - type: graph_match
         strict: false
+      - type: rule
+        checks:
+          - not_contains: "I cannot"
+          - not_contains: "I'm unable"
+        threshold: 1.0
 
   - id: "incident_002"
     input: "Check if there are any issues with the payment system"
