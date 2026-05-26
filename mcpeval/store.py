@@ -107,3 +107,39 @@ class ResultStore:
                 "SELECT * FROM runs ORDER BY run_at DESC, id DESC"
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def get_regression_report(self, run_id: int, baseline_run_id: int) -> dict:
+        current = {r["case_id"]: r for r in self.get_case_results(run_id)}
+        baseline = {r["case_id"]: r for r in self.get_case_results(baseline_run_id)}
+
+        regressed: list[dict] = []
+        improved: list[dict] = []
+        unchanged: list[str] = []
+
+        for case_id, cur in current.items():
+            if case_id not in baseline:
+                continue
+            delta = cur["graph_match_score"] - baseline[case_id]["graph_match_score"]
+            if delta < -0.05:
+                regressed.append({"case_id": case_id, "delta": round(delta, 4)})
+            elif delta > 0.05:
+                improved.append({"case_id": case_id, "delta": round(delta, 4)})
+            else:
+                unchanged.append(case_id)
+
+        current_run = self.get_run(run_id)
+        baseline_run = self.get_run(baseline_run_id)
+        score_delta = None
+        if current_run and baseline_run:
+            score_delta = round(
+                current_run["overall_score"] - baseline_run["overall_score"], 4
+            )
+
+        return {
+            "run_id": run_id,
+            "baseline_run_id": baseline_run_id,
+            "overall_score_delta": score_delta,
+            "regressed": regressed,
+            "improved": improved,
+            "unchanged": unchanged,
+        }
