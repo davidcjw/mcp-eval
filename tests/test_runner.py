@@ -175,3 +175,115 @@ async def test_runner_saves_to_store(tmp_db_path):
     stored = store.get_run(result.run_id)
     assert stored is not None
     assert stored["eval_suite"] == "Test Suite"
+
+
+@pytest.mark.asyncio
+async def test_run_suite_isolates_case_errors():
+    """A crashing case does not prevent subsequent cases from running."""
+    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+    cases = [
+        Case(
+            id="crash",
+            input="trigger crash",
+            expected_graph=ExpectedGraph(steps=[], must_terminate=True),
+            evaluators=[],
+        ),
+        Case(
+            id="normal",
+            input="Do the thing",
+            expected_graph=ExpectedGraph(steps=[GraphStep(tool="get_logs")], must_terminate=True),
+            evaluators=[EvaluatorConfig(type="graph_match")],
+        ),
+    ]
+    suite = EvalSuite(
+        name="Isolation Test",
+        model="claude-3-5-haiku-20241022",
+        mcp_server="test",
+        mock_tools=[MockToolDef(name="get_logs", returns={})],
+        cases=cases,
+    )
+
+    call_count = 0
+
+    async def side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise RuntimeError("Simulated API failure")
+        return _mock_end_turn_response()
+
+    runner = EvalRunner(anthropic_api_key="test-key")
+    with patch("mcpeval.runner.AsyncAnthropic") as mock_anthropic:
+        mock_anthropic.return_value.messages.create = AsyncMock(side_effect=side_effect)
+        result = await runner.run_suite(suite)
+
+    assert result.total_cases == 2
+    crash_cr = next(cr for cr in result.case_results if cr.case_id == "crash")
+    normal_cr = next(cr for cr in result.case_results if cr.case_id == "normal")
+    assert crash_cr.passed is False
+    assert crash_cr.error is not None
+    assert normal_cr.error is None
+
+
+@pytest.mark.asyncio
+async def test_run_case_wires_rule_evaluator():
+    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+
+    suite = EvalSuite(
+        name="Rule Test",
+        model="claude-3-5-haiku-20241022",
+        mcp_server="test",
+        mock_tools=[MockToolDef(name="get_logs", returns={})],
+        cases=[Case(
+            id="rule_case",
+            input="Do the thing",
+            expected_graph=ExpectedGraph(steps=[GraphStep(tool="get_logs")], must_terminate=True),
+            evaluators=[
+                EvaluatorConfig(type="graph_match"),
+                EvaluatorConfig(type="rule", checks=[{"contains": "done"}], threshold=0.7),
+            ],
+        )],
+    )
+    runner = EvalRunner(anthropic_api_key="test-key")
+
+    responses = _mock_tool_use_then_end("get_logs", {})
+    # Override last response to include "done" in text
+    responses[-1].content = [MagicMock(type="text", text="All done.")]
+
+    with patch("mcpeval.runner.AsyncAnthropic") as mock_anthropic:
+        mock_anthropic.return_value.messages.create = AsyncMock(side_effect=responses)
+        result = await runner.run_suite(suite)
+
+    cr = result.case_results[0]
+    assert cr.rule_score == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_run_case_rule_failure_marks_not_passed():
+    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+
+    suite = EvalSuite(
+        name="Rule Fail Test",
+        model="claude-3-5-haiku-20241022",
+        mcp_server="test",
+        mock_tools=[MockToolDef(name="get_logs", returns={})],
+        cases=[Case(
+            id="rule_fail",
+            input="Do the thing",
+            expected_graph=ExpectedGraph(steps=[GraphStep(tool="get_logs")], must_terminate=True),
+            evaluators=[
+                EvaluatorConfig(type="graph_match"),
+                EvaluatorConfig(type="rule", checks=[{"contains": "IMPOSSIBLE_STRING_XYZ"}]),
+            ],
+        )],
+    )
+    runner = EvalRunner(anthropic_api_key="test-key")
+    responses = _mock_tool_use_then_end("get_logs", {})
+
+    with patch("mcpeval.runner.AsyncAnthropic") as mock_anthropic:
+        mock_anthropic.return_value.messages.create = AsyncMock(side_effect=responses)
+        result = await runner.run_suite(suite)
+
+    cr = result.case_results[0]
+    assert cr.rule_score == pytest.approx(0.0)
+    assert cr.passed is False

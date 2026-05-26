@@ -15,6 +15,7 @@ def _make_run_result(score: float = 0.9, cases: list[CaseResult] | None = None) 
             tool_calls_expected=[{"tool": "get_logs"}],
             graph_match_score=score,
             llm_judge_score=None,
+            rule_score=None,
             steps_taken=2,
             terminated_cleanly=True,
             raw_output="Done.",

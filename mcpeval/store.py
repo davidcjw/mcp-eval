@@ -28,9 +28,11 @@ CREATE TABLE IF NOT EXISTS case_results (
     tool_calls_expected TEXT,
     graph_match_score REAL,
     llm_judge_score REAL,
+    rule_score REAL,
     steps_taken INTEGER,
     terminated_cleanly BOOLEAN,
-    raw_output TEXT
+    raw_output TEXT,
+    error TEXT
 )
 """
 
@@ -66,8 +68,9 @@ class ResultStore:
             cursor = conn.execute(
                 "INSERT INTO case_results "
                 "(run_id, case_id, passed, tool_calls_made, tool_calls_expected, "
-                "graph_match_score, llm_judge_score, steps_taken, terminated_cleanly, raw_output) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "graph_match_score, llm_judge_score, rule_score, steps_taken, "
+                "terminated_cleanly, raw_output, error) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     run_id,
                     cr.case_id,
@@ -76,9 +79,11 @@ class ResultStore:
                     json.dumps(cr.tool_calls_expected),
                     cr.graph_match_score,
                     cr.llm_judge_score,
+                    cr.rule_score,
                     cr.steps_taken,
                     int(cr.terminated_cleanly),
                     cr.raw_output,
+                    cr.error,
                 ),
             )
             conn.commit()

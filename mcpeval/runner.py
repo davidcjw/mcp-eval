@@ -21,9 +21,11 @@ class CaseResult:
     tool_calls_expected: list[dict[str, Any]]
     graph_match_score: float
     llm_judge_score: float | None
+    rule_score: float | None
     steps_taken: int
     terminated_cleanly: bool
     raw_output: str
+    error: str | None = None
 
 
 @dataclass
@@ -107,6 +109,33 @@ class EvalRunner:
         capture: CaptureMiddleware,
         client: Any,
     ) -> CaseResult:
+        try:
+            return await self._run_case_inner(case, suite, capture, client)
+        except Exception as exc:
+            return CaseResult(
+                case_id=case.id,
+                passed=False,
+                tool_calls_made=[],
+                tool_calls_expected=[
+                    {"tool": s.tool, "params_contain": s.params_contain}
+                    for s in case.expected_graph.steps
+                ],
+                graph_match_score=0.0,
+                llm_judge_score=None,
+                rule_score=None,
+                steps_taken=0,
+                terminated_cleanly=False,
+                raw_output="",
+                error=str(exc),
+            )
+
+    async def _run_case_inner(
+        self,
+        case: Case,
+        suite: EvalSuite,
+        capture: CaptureMiddleware,
+        client: Any,
+    ) -> CaseResult:
         anthropic = AsyncAnthropic(api_key=self._api_key)
 
         mcp_tools = await client.list_tools()
@@ -164,9 +193,45 @@ class EvalRunner:
         evaluator = GraphMatchEvaluator(strict=eval_cfg.strict)
         graph_result = evaluator.evaluate(capture.calls, graph, terminated_cleanly)
 
+        llm_judge_score: float | None = None
+        rule_score: float | None = None
+
+        for ecfg in case.evaluators:
+            if ecfg.type == "rule" and ecfg.checks is not None:
+                from mcpeval.evaluators.rule import RuleEvaluator
+                rule_eval = RuleEvaluator(
+                    checks=ecfg.checks,
+                    strict=ecfg.strict,
+                    threshold=ecfg.threshold,
+                )
+                rule_result = rule_eval.evaluate(raw_output)
+                rule_score = rule_result.score
+            elif ecfg.type == "llm_judge" and ecfg.criteria is not None:
+                from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator
+                judge = LLMJudgeEvaluator(
+                    criteria=ecfg.criteria,
+                    model=ecfg.judge_model or suite.model,
+                    api_key=self._api_key,
+                    threshold=ecfg.threshold,
+                )
+                judge_result = await judge.evaluate(
+                    raw_output=raw_output,
+                    task_input=case.input,
+                    tool_calls=capture.calls,
+                )
+                llm_judge_score = judge_result.score
+
+        passed = graph_result.passed
+        if rule_score is not None:
+            rule_cfg = next((e for e in case.evaluators if e.type == "rule"), None)
+            passed = passed and (rule_score >= (rule_cfg.threshold if rule_cfg else 0.7))
+        if llm_judge_score is not None:
+            judge_cfg = next((e for e in case.evaluators if e.type == "llm_judge"), None)
+            passed = passed and (llm_judge_score >= (judge_cfg.threshold if judge_cfg else 0.7))
+
         return CaseResult(
             case_id=case.id,
-            passed=graph_result.passed,
+            passed=passed,
             tool_calls_made=[
                 {"tool_name": r.tool_name, "arguments": r.arguments}
                 for r in capture.calls
@@ -176,7 +241,8 @@ class EvalRunner:
                 for s in graph.steps
             ],
             graph_match_score=graph_result.score,
-            llm_judge_score=None,
+            llm_judge_score=llm_judge_score,
+            rule_score=rule_score,
             steps_taken=graph_result.steps_taken,
             terminated_cleanly=terminated_cleanly,
             raw_output=raw_output,
