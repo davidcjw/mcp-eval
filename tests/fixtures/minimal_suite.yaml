@@ -3,6 +3,14 @@ model: claude-3-5-haiku-20241022
 mcp_server: "test-mcp"
 mock_tools:
   get_logs:
+    description: "Retrieve logs for a service"
+    parameters:
+      type: object
+      properties:
+        service:
+          type: string
+          description: Service name to fetch logs for
+      required: [service]
     returns:
       logs:
         - "ERROR payment-service: timeout at 14:32"
@@ -28,3 +36,7 @@ cases:
     evaluators:
       - type: graph_match
         strict: false
+      - type: rule
+        checks:
+          - contains: "executed"
+        threshold: 0.8

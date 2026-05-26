@@ -9,6 +9,8 @@ import yaml
 class MockToolDef:
     name: str
     returns: dict[str, Any]
+    description: str = ""
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -30,6 +32,10 @@ class ExpectedGraph:
 class EvaluatorConfig:
     type: str
     strict: bool = False
+    checks: list[dict] | None = None
+    criteria: str | None = None
+    judge_model: str | None = None
+    threshold: float = 0.7
 
 
 @dataclass
@@ -70,6 +76,10 @@ def _parse_evaluator(raw: dict) -> EvaluatorConfig:
     return EvaluatorConfig(
         type=raw["type"],
         strict=bool(raw.get("strict", False)),
+        checks=raw.get("checks"),
+        criteria=raw.get("criteria"),
+        judge_model=raw.get("judge_model"),
+        threshold=float(raw.get("threshold", 0.7)),
     )
 
 
@@ -84,7 +94,12 @@ def _parse_case(raw: dict) -> Case:
 
 def _parse_mock_tools(raw: dict) -> list[MockToolDef]:
     return [
-        MockToolDef(name=name, returns=cfg.get("returns", {}))
+        MockToolDef(
+            name=name,
+            returns=cfg.get("returns", {}),
+            description=cfg.get("description", ""),
+            parameters=cfg.get("parameters", {}),
+        )
         for name, cfg in raw.items()
     ]
 

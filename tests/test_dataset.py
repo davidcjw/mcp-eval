@@ -80,3 +80,42 @@ def test_load_suite_invalid_yaml(tmp_path):
     bad_file.write_text("name: [unclosed")
     with pytest.raises(Exception):
         load_suite(bad_file)
+
+
+def test_load_suite_mock_tool_description():
+    suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
+    get_logs = next(t for t in suite.mock_tools if t.name == "get_logs")
+    assert get_logs.description == "Retrieve logs for a service"
+
+
+def test_load_suite_mock_tool_parameters():
+    suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
+    get_logs = next(t for t in suite.mock_tools if t.name == "get_logs")
+    assert get_logs.parameters["type"] == "object"
+    assert "service" in get_logs.parameters["properties"]
+
+
+def test_load_suite_mock_tool_no_description_defaults_empty():
+    suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
+    run_playbook = next(t for t in suite.mock_tools if t.name == "run_playbook")
+    assert run_playbook.description == ""
+    assert run_playbook.parameters == {}
+
+
+def test_load_suite_evaluator_rule_fields():
+    suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
+    rule_eval = next(
+        (e for e in suite.cases[0].evaluators if e.type == "rule"), None
+    )
+    assert rule_eval is not None
+    assert rule_eval.checks == [{"contains": "executed"}]
+    assert rule_eval.threshold == 0.8
+
+
+def test_load_suite_evaluator_defaults():
+    suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
+    graph_eval = next(e for e in suite.cases[0].evaluators if e.type == "graph_match")
+    assert graph_eval.criteria is None
+    assert graph_eval.judge_model is None
+    assert graph_eval.checks is None
+    assert graph_eval.threshold == 0.7
