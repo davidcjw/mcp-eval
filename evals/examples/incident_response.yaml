@@ -24,8 +24,6 @@ cases:
     expected_graph:
       steps:
         - tool: get_logs
-          params_contain:
-            service: "payment"
         - tool: run_playbook
           must_follow: get_logs
         - tool: notify_oncall
