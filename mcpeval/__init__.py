@@ -8,6 +8,7 @@ from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator, LLMJudgeResult
 from mcpeval.store import ResultStore
 from mcpeval.runner import EvalRunner, RunResult, CaseResult
 from mcpeval.reporter import Reporter
+from mcpeval.html_reporter import HtmlReporter
 
 __all__ = [
     "load_suite",
@@ -33,4 +34,5 @@ __all__ = [
     "RunResult",
     "CaseResult",
     "Reporter",
+    "HtmlReporter",
 ]

@@ -1,6 +1,7 @@
 # tests/test_cli.py
 from __future__ import annotations
 import dataclasses
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from click.testing import CliRunner
 from mcpeval.cli import cli
@@ -169,3 +170,48 @@ def test_run_models_exits_one_when_worst_score_below_threshold(tmp_path):
                 ["run", suite_path, "--models", "haiku,sonnet", "--threshold", "0.8", "--db", ":memory:"],
             )
     assert result.exit_code == 1
+
+
+def test_run_output_flag_creates_html_file(tmp_path):
+    runner = CliRunner()
+    suite_path = _make_suite_yaml(tmp_path)
+    out_path = str(tmp_path / "report.html")
+
+    with patch("mcpeval.cli.EvalRunner") as MockRunner:
+        mock_instance = MockRunner.return_value
+        mock_instance.run_suite = AsyncMock(return_value=_make_run_result(1.0))
+        with patch("mcpeval.cli.ResultStore"):
+            result = runner.invoke(
+                cli,
+                ["run", suite_path, "--output", out_path, "--db", ":memory:"],
+            )
+    assert result.exit_code == 0
+    assert Path(out_path).exists()
+
+
+def test_run_models_output_flag_creates_html_file(tmp_path):
+    runner = CliRunner()
+    suite_path = _make_suite_yaml(tmp_path)
+    out_path = str(tmp_path / "multi.html")
+    scores = [1.0, 0.8]
+    score_index = 0
+
+    async def fake_run_suite(suite):
+        nonlocal score_index
+        r = _make_run_result(scores[score_index])
+        score_index += 1
+        return dataclasses.replace(r, model=suite.model)
+
+    with patch("mcpeval.cli.EvalRunner") as MockRunner:
+        mock_instance = MockRunner.return_value
+        mock_instance.run_suite = fake_run_suite
+        with patch("mcpeval.cli.ResultStore"):
+            result = runner.invoke(
+                cli,
+                ["run", suite_path, "--models", "haiku,sonnet", "--output", out_path, "--db", ":memory:"],
+            )
+    assert result.exit_code == 0
+    assert Path(out_path).exists()
+    html = Path(out_path).read_text()
+    assert "claude-haiku-4-5-20251001" in html
+    assert "claude-sonnet-4-6" in html
