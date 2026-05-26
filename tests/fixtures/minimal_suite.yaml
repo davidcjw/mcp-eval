@@ -1,0 +1,30 @@
+name: "Minimal Test Suite"
+model: claude-sonnet-4-20250514
+mcp_server: "test-mcp"
+mock_tools:
+  get_logs:
+    returns:
+      logs:
+        - "ERROR payment-service: timeout at 14:32"
+        - "ERROR payment-service: timeout at 14:33"
+  run_playbook:
+    returns:
+      status: "ok"
+      steps_completed: 3
+cases:
+  - id: "test_001"
+    input: "Check payment service logs and run playbook"
+    expected_graph:
+      steps:
+        - tool: get_logs
+          params_contain:
+            service: "payment"
+        - tool: run_playbook
+          must_follow: get_logs
+        - tool: notify_oncall
+          optional: true
+      max_steps: 6
+      must_terminate: true
+    evaluators:
+      - type: graph_match
+        strict: false
