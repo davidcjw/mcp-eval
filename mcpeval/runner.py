@@ -18,7 +18,7 @@ class CaseResult:
 
 @dataclass
 class RunResult:
-    run_id: str | None
+    run_id: int | None
     eval_suite: str
     model: str
     total_cases: int
