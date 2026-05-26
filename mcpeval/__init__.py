@@ -1,4 +1,4 @@
-from mcpeval.dataset import load_suite, EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep
+from mcpeval.dataset import load_suite, EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
 from mcpeval.graph import ToolCallGraph, Step
 from mcpeval.capture import CaptureMiddleware, ToolCallRecord
 from mcpeval.mock_server import MockMCPServer
@@ -16,6 +16,7 @@ __all__ = [
     "Case",
     "ExpectedGraph",
     "GraphStep",
+    "EvaluatorConfig",
     "ToolCallGraph",
     "Step",
     "CaptureMiddleware",

@@ -78,6 +78,7 @@ class EvalRunner:
                 case_results.append(cr)
 
         passed = sum(1 for cr in case_results if cr.passed)
+        # overall_score uses graph_match_score only; rule/llm_judge scores inform per-case passed but not this aggregate
         overall_score = (
             sum(cr.graph_match_score for cr in case_results) / len(case_results)
             if case_results else 0.0
@@ -195,6 +196,8 @@ class EvalRunner:
 
         llm_judge_score: float | None = None
         rule_score: float | None = None
+        rule_passed: bool | None = None
+        judge_passed: bool | None = None
 
         for ecfg in case.evaluators:
             if ecfg.type == "rule" and ecfg.checks is not None:
@@ -206,6 +209,7 @@ class EvalRunner:
                 )
                 rule_result = rule_eval.evaluate(raw_output)
                 rule_score = rule_result.score
+                rule_passed = rule_result.passed
             elif ecfg.type == "llm_judge" and ecfg.criteria is not None:
                 from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator
                 judge = LLMJudgeEvaluator(
@@ -220,14 +224,13 @@ class EvalRunner:
                     tool_calls=capture.calls,
                 )
                 llm_judge_score = judge_result.score
+                judge_passed = judge_result.passed
 
         passed = graph_result.passed
-        if rule_score is not None:
-            rule_cfg = next((e for e in case.evaluators if e.type == "rule"), None)
-            passed = passed and (rule_score >= (rule_cfg.threshold if rule_cfg else 0.7))
-        if llm_judge_score is not None:
-            judge_cfg = next((e for e in case.evaluators if e.type == "llm_judge"), None)
-            passed = passed and (llm_judge_score >= (judge_cfg.threshold if judge_cfg else 0.7))
+        if rule_passed is not None:
+            passed = passed and rule_passed
+        if judge_passed is not None:
+            passed = passed and judge_passed
 
         return CaseResult(
             case_id=case.id,
