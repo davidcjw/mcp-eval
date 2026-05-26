@@ -39,6 +39,9 @@ class Reporter:
         self._console.print(table)
 
     def print_multi_model_summary(self, results: list[RunResult]) -> None:
+        if not results:
+            self._console.print("No results to display.")
+            return
         self._console.print("\n[bold]Multi-Model Comparison[/bold]")
         self._console.print(f"[bold]Suite:[/bold] {results[0].eval_suite if results else ''}")
 

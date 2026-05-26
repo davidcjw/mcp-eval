@@ -143,7 +143,8 @@ def test_run_models_alias_resolved(tmp_path):
         mock_instance = MockRunner.return_value
         mock_instance.run_suite = fake_run_suite
         with patch("mcpeval.cli.ResultStore"):
-            runner.invoke(cli, ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"])
+            result = runner.invoke(cli, ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"])
+    assert result.exit_code == 0
     assert seen_models == ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"]
 
 
@@ -151,9 +152,13 @@ def test_run_models_exits_one_when_worst_score_below_threshold(tmp_path):
     runner = CliRunner()
     suite_path = _make_suite_yaml(tmp_path)
     scores = [1.0, 0.4]
+    score_index = 0
 
     async def fake_run_suite(suite):
-        return _make_run_result(scores.pop(0))
+        nonlocal score_index
+        result = _make_run_result(scores[score_index])
+        score_index += 1
+        return result
 
     with patch("mcpeval.cli.EvalRunner") as MockRunner:
         mock_instance = MockRunner.return_value
