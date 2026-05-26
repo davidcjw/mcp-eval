@@ -19,7 +19,7 @@ def sample_mock_tools() -> list[MockToolDef]:
 def sample_suite(sample_mock_tools) -> EvalSuite:
     return EvalSuite(
         name="Test Suite",
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",
         mcp_server="test-mcp",
         mock_tools=sample_mock_tools,
         cases=[
@@ -81,7 +81,7 @@ def sample_run_result(passing_case_result, failing_case_result) -> RunResult:
     return RunResult(
         run_id=None,
         eval_suite="Test Suite",
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",
         total_cases=2,
         passed=1,
         failed=1,

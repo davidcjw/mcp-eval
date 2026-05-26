@@ -18,7 +18,7 @@ def _make_suite(cases: list[Case] | None = None) -> EvalSuite:
         )]
     return EvalSuite(
         name="Test Suite",
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",
         mcp_server="test-mcp",
         mock_tools=[MockToolDef(name="get_logs", returns={"logs": []})],
         cases=cases,
@@ -62,7 +62,7 @@ async def test_run_suite_returns_run_result():
     assert isinstance(result, RunResult)
     assert result.eval_suite == "Test Suite"
     assert result.total_cases == 1
-    assert result.model == "claude-sonnet-4-20250514"
+    assert result.model == "claude-3-5-haiku-20241022"
 
 
 @pytest.mark.asyncio
@@ -129,7 +129,7 @@ async def test_run_suite_aggregates_scores():
     )
     suite = EvalSuite(
         name="Multi",
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",
         mcp_server="test",
         mock_tools=[
             MockToolDef(name="get_logs", returns={}),

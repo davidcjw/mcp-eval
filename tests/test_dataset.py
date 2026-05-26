@@ -10,7 +10,7 @@ def test_load_suite_minimal():
     suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
     assert isinstance(suite, EvalSuite)
     assert suite.name == "Minimal Test Suite"
-    assert suite.model == "claude-sonnet-4-20250514"
+    assert suite.model == "claude-3-5-haiku-20241022"
     assert suite.mcp_server == "test-mcp"
     assert len(suite.cases) == 1
 

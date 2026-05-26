@@ -1,5 +1,5 @@
 name: "Incident Response Agent"
-model: claude-sonnet-4-20250514
+model: claude-3-5-haiku-20241022
 mcp_server: "ops-mcp"
 mock_tools:
   get_logs:

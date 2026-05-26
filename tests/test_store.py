@@ -22,7 +22,7 @@ def _make_run_result(score: float = 0.9, cases: list[CaseResult] | None = None) 
     return RunResult(
         run_id=None,
         eval_suite="My Suite",
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",
         total_cases=len(cases),
         passed=sum(1 for c in cases if c.passed),
         failed=sum(1 for c in cases if not c.passed),
@@ -63,7 +63,7 @@ def test_save_run_persists_fields(tmp_db_path):
     row = store.get_run(run_id)
     assert row is not None
     assert row["eval_suite"] == "My Suite"
-    assert row["model"] == "claude-sonnet-4-20250514"
+    assert row["model"] == "claude-3-5-haiku-20241022"
     assert abs(row["overall_score"] - 0.85) < 0.001
     assert row["total_cases"] == 1
     assert row["passed"] == 1
