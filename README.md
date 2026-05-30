@@ -1,5 +1,9 @@
 # mcpeval
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![PyPI](https://img.shields.io/pypi/v/mcpeval)](https://pypi.org/project/mcpeval/)
+
 **Know when your AI agent stops doing the right thing.**
 
 `mcpeval` tests MCP-native agents by checking the *sequence of tool calls they make* — not just what they say. Define the tool-call graph you expect, run your agent against a mock MCP server, and get a pass/fail score with regression tracking across runs.
@@ -9,6 +13,23 @@ One command to run, one exit code for CI:
 ```bash
 mcpeval run evals/incident_response.yaml --threshold 0.85
 ```
+
+## Table of Contents
+
+- [Why tool-call graph evaluation](#why-tool-call-graph-evaluation)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [CLI reference](#cli-reference)
+- [Evaluator types](#evaluator-types)
+- [Regression detection](#regression-detection)
+- [Python API](#python-api)
+- [Core concepts](#core-concepts)
+- [Development](#development)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Code of Conduct](#code-of-conduct)
+- [License](#license)
 
 ## Why tool-call graph evaluation
 
@@ -296,3 +317,22 @@ mcpeval/
 - [x] Phase 1 — Core engine: MockMCPServer, ToolCallGraph, GraphMatchEvaluator, SQLite, Rich reporter
 - [x] Phase 2 — Intelligence: LLM-as-judge evaluator, rule-based checks, regression detection, richer tool schemas
 - [x] Phase 3 — CLI: `mcpeval run` entrypoint, threshold exit codes, multi-model comparison, HTML reports
+
+## Contributing
+
+Contributions are welcome! Please open an issue first to discuss what you'd like to change.
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'feat: describe change'`)
+4. Push and open a pull request
+
+Please make sure tests pass (`uv run pytest tests/ -m "not integration"`) before submitting a PR.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating you agree to uphold a welcoming, harassment-free environment.
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
