@@ -11,8 +11,12 @@
 One command to run, one exit code for CI:
 
 ```bash
-mcpeval run evals/incident_response.yaml --threshold 0.85
+mcpeval run evals/examples/incident_response.yaml --threshold 0.85
 ```
+
+<p align="center">
+  <img src="docs/demo.gif" alt="mcpeval demo" width="720">
+</p>
 
 ## Table of Contents
 
@@ -50,7 +54,7 @@ uv add mcpeval
 **1. Define your eval suite (YAML):**
 
 ```yaml
-# evals/incident_response.yaml
+# evals/examples/incident_response.yaml
 name: "Incident Response Agent"
 model: claude-sonnet-4-6
 mcp_server: "ops-mcp"
@@ -92,7 +96,7 @@ cases:
 **2. Run it:**
 
 ```bash
-mcpeval run evals/incident_response.yaml --threshold 0.85
+mcpeval run evals/examples/incident_response.yaml --threshold 0.85
 ```
 
 ```
@@ -130,13 +134,13 @@ Options:
 - name: Run evals
   env:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  run: mcpeval run evals/incident_response.yaml --threshold 0.85
+  run: mcpeval run evals/examples/incident_response.yaml --threshold 0.85
 ```
 
 ### Compare models side by side
 
 ```bash
-mcpeval run evals/incident_response.yaml --models haiku,sonnet --threshold 0.7
+mcpeval run evals/examples/incident_response.yaml --models haiku,sonnet --threshold 0.7
 ```
 
 ```
@@ -152,9 +156,9 @@ Suite: Incident Response Agent
 ### HTML report
 
 ```bash
-mcpeval run evals/incident_response.yaml --output report.html
+mcpeval run evals/examples/incident_response.yaml --output report.html
 # or with multi-model
-mcpeval run evals/incident_response.yaml --models haiku,sonnet --output report.html
+mcpeval run evals/examples/incident_response.yaml --models haiku,sonnet --output report.html
 ```
 
 Generates a self-contained HTML file with per-case scores, rule/LLM judge results, error details, and a model comparison table.
@@ -215,7 +219,7 @@ import asyncio
 from mcpeval import load_suite, EvalRunner, ResultStore, Reporter
 
 async def main():
-    suite = load_suite("evals/incident_response.yaml")
+    suite = load_suite("evals/examples/incident_response.yaml")
     store = ResultStore("mcpeval.db")
     store.initialize()
 

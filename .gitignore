@@ -8,4 +8,6 @@ build/
 .env
 .DS_Store
 eval_report.html
-docs/
+docs/*
+!docs/demo.tape
+!docs/demo.gif
