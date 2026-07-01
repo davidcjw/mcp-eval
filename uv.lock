@@ -824,6 +824,7 @@ source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "anyio" },
+    { name = "click" },
     { name = "fastmcp" },
     { name = "pyyaml" },
     { name = "rich" },
@@ -839,6 +840,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.40.0" },
     { name = "anyio", specifier = ">=4.0" },
+    { name = "click", specifier = ">=8.0" },
     { name = "fastmcp", specifier = ">=2.14.7" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },

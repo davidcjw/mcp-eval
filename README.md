@@ -1,5 +1,6 @@
 # mcpeval
 
+[![CI](https://github.com/davidcjw/mcp-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/davidcjw/mcp-eval/actions/workflows/ci.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 [![PyPI](https://img.shields.io/pypi/v/mcpeval)](https://pypi.org/project/mcpeval/)
