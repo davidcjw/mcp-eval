@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from mcpeval.dataset import ExpectedGraph
@@ -21,7 +22,7 @@ class ToolCallGraph:
     must_terminate: bool = True
 
     @classmethod
-    def from_expected(cls, eg: "ExpectedGraph") -> "ToolCallGraph":
+    def from_expected(cls, eg: ExpectedGraph) -> ToolCallGraph:
         return cls(
             steps=[
                 Step(

@@ -1,7 +1,8 @@
-import pytest
 from pathlib import Path
-import yaml
-from mcpeval.dataset import load_suite, EvalSuite, MockToolDef, GraphStep, EvaluatorConfig
+
+import pytest
+
+from mcpeval.dataset import EvalSuite, load_suite
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -104,9 +105,7 @@ def test_load_suite_mock_tool_no_description_defaults_empty():
 
 def test_load_suite_evaluator_rule_fields():
     suite = load_suite(FIXTURES_DIR / "minimal_suite.yaml")
-    rule_eval = next(
-        (e for e in suite.cases[0].evaluators if e.type == "rule"), None
-    )
+    rule_eval = next((e for e in suite.cases[0].evaluators if e.type == "rule"), None)
     assert rule_eval is not None
     assert rule_eval.checks == [{"contains": "executed"}]
     assert rule_eval.threshold == 0.8

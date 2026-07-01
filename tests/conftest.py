@@ -1,9 +1,9 @@
-import pytest
 from pathlib import Path
-from mcpeval.dataset import (
-    EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
-)
-from mcpeval.runner import RunResult, CaseResult
+
+import pytest
+
+from mcpeval.dataset import Case, EvalSuite, EvaluatorConfig, ExpectedGraph, GraphStep, MockToolDef
+from mcpeval.runner import CaseResult, RunResult
 
 
 @pytest.fixture

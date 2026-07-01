@@ -1,10 +1,11 @@
 # mcpeval/html_reporter.py
 from __future__ import annotations
-import html
-from pathlib import Path
-from datetime import datetime, timezone
 
-from mcpeval.runner import RunResult, CaseResult
+import html
+from datetime import datetime, timezone
+from pathlib import Path
+
+from mcpeval.runner import CaseResult, RunResult
 
 _CSS = """
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; color: #1a1a1a; }
@@ -93,8 +94,7 @@ class HtmlReporter:
             f'<div class="stat"><div class="value" style="color:#dc2626">{result.failed}</div><div class="label">Failed</div></div>'
             f'<div class="stat"><div class="value {score_cls}">{result.overall_score:.2f}</div><div class="label">Score</div></div>'
             f"</div>"
-            f'<div class="section-title">Cases</div>'
-            + _case_table(result.case_results)
+            f'<div class="section-title">Cases</div>' + _case_table(result.case_results)
         )
         return _html_page(html.escape(result.eval_suite), body)
 
@@ -115,16 +115,13 @@ class HtmlReporter:
         )
         per_model = ""
         for r in results:
-            per_model += (
-                f'<div class="section-title">{html.escape(r.model)}</div>'
-                + _case_table(r.case_results)
+            per_model += f'<div class="section-title">{html.escape(r.model)}</div>' + _case_table(
+                r.case_results
             )
         body = (
             f"<h1>{suite_name} — Multi-Model Comparison</h1>"
             f'<div class="meta">Generated: {now}</div>'
-            f'<div class="section-title">Overview</div>'
-            + overview
-            + per_model
+            f'<div class="section-title">Overview</div>' + overview + per_model
         )
         return _html_page(f"{suite_name} — Multi-Model", body)
 

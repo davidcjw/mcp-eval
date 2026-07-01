@@ -1,4 +1,5 @@
 import pytest
+
 from mcpeval.dataset import MockToolDef
 from mcpeval.mock_server import MockMCPServer
 
@@ -69,16 +70,18 @@ async def test_mock_server_each_tool_returns_correct_value():
 
 @pytest.mark.asyncio
 async def test_tool_description_propagates():
-    tools = [MockToolDef(
-        name="get_logs",
-        returns={"logs": []},
-        description="Retrieve service logs",
-        parameters={
-            "type": "object",
-            "properties": {"service": {"type": "string"}},
-            "required": ["service"],
-        },
-    )]
+    tools = [
+        MockToolDef(
+            name="get_logs",
+            returns={"logs": []},
+            description="Retrieve service logs",
+            parameters={
+                "type": "object",
+                "properties": {"service": {"type": "string"}},
+                "required": ["service"],
+            },
+        )
+    ]
     server = MockMCPServer("test", tools)
     async with server.start() as (client, _capture):
         listed = await client.list_tools()

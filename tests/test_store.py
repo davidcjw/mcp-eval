@@ -1,25 +1,28 @@
 import json
 import sqlite3
+
 import pytest
-from pathlib import Path
+
+from mcpeval.runner import CaseResult, RunResult
 from mcpeval.store import ResultStore
-from mcpeval.runner import RunResult, CaseResult
 
 
 def _make_run_result(score: float = 0.9, cases: list[CaseResult] | None = None) -> RunResult:
     if cases is None:
-        cases = [CaseResult(
-            case_id="c001",
-            passed=True,
-            tool_calls_made=[{"tool_name": "get_logs", "arguments": {}}],
-            tool_calls_expected=[{"tool": "get_logs"}],
-            graph_match_score=score,
-            llm_judge_score=None,
-            rule_score=None,
-            steps_taken=2,
-            terminated_cleanly=True,
-            raw_output="Done.",
-        )]
+        cases = [
+            CaseResult(
+                case_id="c001",
+                passed=True,
+                tool_calls_made=[{"tool_name": "get_logs", "arguments": {}}],
+                tool_calls_expected=[{"tool": "get_logs"}],
+                graph_match_score=score,
+                llm_judge_score=None,
+                rule_score=None,
+                steps_taken=2,
+                terminated_cleanly=True,
+                raw_output="Done.",
+            )
+        ]
     return RunResult(
         run_id=None,
         eval_suite="My Suite",

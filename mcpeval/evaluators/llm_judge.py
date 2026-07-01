@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import json
 import os
 from dataclasses import dataclass
@@ -6,7 +7,6 @@ from dataclasses import dataclass
 from anthropic import AsyncAnthropic
 
 from mcpeval.capture import ToolCallRecord
-
 
 _JUDGE_PROMPT = """\
 You are an impartial evaluator for AI agent responses.
@@ -60,9 +60,9 @@ class LLMJudgeEvaluator:
         task_input: str,
         tool_calls: list[ToolCallRecord],
     ) -> LLMJudgeResult:
-        tool_calls_summary = "\n".join(
-            f"- {c.tool_name}({json.dumps(c.arguments)})" for c in tool_calls
-        ) or "(none)"
+        tool_calls_summary = (
+            "\n".join(f"- {c.tool_name}({json.dumps(c.arguments)})" for c in tool_calls) or "(none)"
+        )
 
         prompt = _JUDGE_PROMPT.format(
             task_input=task_input,
@@ -82,10 +82,7 @@ class LLMJudgeEvaluator:
         # Strip markdown code fences that some models add (```json ... ```)
         if text.startswith("```"):
             lines = text.splitlines()
-            text = "\n".join(
-                line for line in lines
-                if not line.strip().startswith("```")
-            ).strip()
+            text = "\n".join(line for line in lines if not line.strip().startswith("```")).strip()
         try:
             data = json.loads(text)
             score = float(data["score"])

@@ -1,8 +1,9 @@
 import io
-import pytest
+
 from rich.console import Console
+
 from mcpeval.reporter import Reporter
-from mcpeval.runner import RunResult, CaseResult
+from mcpeval.runner import RunResult
 
 
 def _make_console() -> tuple[Console, io.StringIO]:

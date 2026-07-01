@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import json
 import sqlite3
 from pathlib import Path
@@ -57,8 +58,14 @@ class ResultStore:
             cursor = conn.execute(
                 "INSERT INTO runs (eval_suite, model, total_cases, passed, failed, overall_score) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                (result.eval_suite, result.model, result.total_cases,
-                 result.passed, result.failed, result.overall_score),
+                (
+                    result.eval_suite,
+                    result.model,
+                    result.total_cases,
+                    result.passed,
+                    result.failed,
+                    result.overall_score,
+                ),
             )
             conn.commit()
             return cursor.lastrowid
@@ -96,16 +103,12 @@ class ResultStore:
 
     def get_case_results(self, run_id: int) -> list[dict]:
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM case_results WHERE run_id = ?", (run_id,)
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM case_results WHERE run_id = ?", (run_id,)).fetchall()
             return [dict(r) for r in rows]
 
     def list_runs(self) -> list[dict]:
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM runs ORDER BY run_at DESC, id DESC"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM runs ORDER BY run_at DESC, id DESC").fetchall()
             return [dict(r) for r in rows]
 
     def get_regression_report(self, run_id: int, baseline_run_id: int) -> dict:
@@ -131,9 +134,7 @@ class ResultStore:
         baseline_run = self.get_run(baseline_run_id)
         score_delta = None
         if current_run and baseline_run:
-            score_delta = round(
-                current_run["overall_score"] - baseline_run["overall_score"], 4
-            )
+            score_delta = round(current_run["overall_score"] - baseline_run["overall_score"], 4)
 
         return {
             "run_id": run_id,

@@ -1,12 +1,14 @@
 # tests/test_cli.py
 from __future__ import annotations
+
 import dataclasses
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+
 from click.testing import CliRunner
+
 from mcpeval.cli import cli
-from mcpeval.runner import RunResult, CaseResult
-import asyncio
+from mcpeval.runner import CaseResult, RunResult
 
 
 def test_help_exits_zero():
@@ -82,7 +84,9 @@ def test_run_exits_zero_when_score_meets_threshold(tmp_path):
         mock_instance = MockRunner.return_value
         mock_instance.run_suite = AsyncMock(return_value=_make_run_result(1.0))
         with patch("mcpeval.cli.ResultStore"):
-            result = runner.invoke(cli, ["run", suite_path, "--threshold", "0.8", "--db", ":memory:"])
+            result = runner.invoke(
+                cli, ["run", suite_path, "--threshold", "0.8", "--db", ":memory:"]
+            )
     assert result.exit_code == 0
 
 
@@ -93,7 +97,9 @@ def test_run_exits_one_when_score_below_threshold(tmp_path):
         mock_instance = MockRunner.return_value
         mock_instance.run_suite = AsyncMock(return_value=_make_run_result(0.5))
         with patch("mcpeval.cli.ResultStore"):
-            result = runner.invoke(cli, ["run", suite_path, "--threshold", "0.8", "--db", ":memory:"])
+            result = runner.invoke(
+                cli, ["run", suite_path, "--threshold", "0.8", "--db", ":memory:"]
+            )
     assert result.exit_code == 1
 
 
@@ -144,7 +150,9 @@ def test_run_models_alias_resolved(tmp_path):
         mock_instance = MockRunner.return_value
         mock_instance.run_suite = fake_run_suite
         with patch("mcpeval.cli.ResultStore"):
-            result = runner.invoke(cli, ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"])
+            result = runner.invoke(
+                cli, ["run", suite_path, "--models", "haiku,sonnet", "--db", ":memory:"]
+            )
     assert result.exit_code == 0
     assert seen_models == ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"]
 
@@ -167,7 +175,16 @@ def test_run_models_exits_one_when_worst_score_below_threshold(tmp_path):
         with patch("mcpeval.cli.ResultStore"):
             result = runner.invoke(
                 cli,
-                ["run", suite_path, "--models", "haiku,sonnet", "--threshold", "0.8", "--db", ":memory:"],
+                [
+                    "run",
+                    suite_path,
+                    "--models",
+                    "haiku,sonnet",
+                    "--threshold",
+                    "0.8",
+                    "--db",
+                    ":memory:",
+                ],
             )
     assert result.exit_code == 1
 
@@ -208,7 +225,16 @@ def test_run_models_output_flag_creates_html_file(tmp_path):
         with patch("mcpeval.cli.ResultStore"):
             result = runner.invoke(
                 cli,
-                ["run", suite_path, "--models", "haiku,sonnet", "--output", out_path, "--db", ":memory:"],
+                [
+                    "run",
+                    suite_path,
+                    "--models",
+                    "haiku,sonnet",
+                    "--output",
+                    out_path,
+                    "--db",
+                    ":memory:",
+                ],
             )
     assert result.exit_code == 0
     assert Path(out_path).exists()

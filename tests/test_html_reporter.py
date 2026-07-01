@@ -1,8 +1,8 @@
 # tests/test_html_reporter.py
 from __future__ import annotations
-from pathlib import Path
+
 from mcpeval.html_reporter import HtmlReporter
-from mcpeval.runner import RunResult, CaseResult
+from mcpeval.runner import CaseResult, RunResult
 
 
 def _make_case_result(case_id: str, passed: bool, score: float) -> CaseResult:
