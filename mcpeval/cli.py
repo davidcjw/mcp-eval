@@ -1,14 +1,15 @@
 # mcpeval/cli.py
 from __future__ import annotations
+
 import asyncio
 import dataclasses
 
 import click
 
 from mcpeval.dataset import load_suite
+from mcpeval.reporter import Reporter
 from mcpeval.runner import EvalRunner, RunResult
 from mcpeval.store import ResultStore
-from mcpeval.reporter import Reporter
 
 _MODEL_ALIASES: dict[str, str] = {
     "haiku": "claude-haiku-4-5-20251001",
@@ -25,7 +26,11 @@ def cli() -> None:
 @cli.command()
 @click.argument("suite_file")
 @click.option("--threshold", type=float, default=None, help="Exit 1 if overall_score < threshold.")
-@click.option("--models", default=None, help="Comma-separated model IDs or shorthand aliases (haiku/sonnet/opus).")
+@click.option(
+    "--models",
+    default=None,
+    help="Comma-separated model IDs or shorthand aliases (haiku/sonnet/opus).",
+)
 @click.option("--output", default=None, help="Write HTML report to this path.")
 @click.option("--db", default="mcpeval.db", show_default=True, help="SQLite DB path.")
 def run(
@@ -55,6 +60,7 @@ def run(
         reporter.print_multi_model_summary(run_results)
         if output:
             from mcpeval.html_reporter import HtmlReporter
+
             HtmlReporter().write_multi_model_report(run_results, output)
         if threshold is not None:
             worst = min(r.overall_score for r in run_results)
@@ -65,6 +71,7 @@ def run(
         reporter.print_run_summary(run_result)
         if output:
             from mcpeval.html_reporter import HtmlReporter
+
             HtmlReporter().write_report(run_result, output)
         if threshold is not None and run_result.overall_score < threshold:
             raise click.exceptions.Exit(1)

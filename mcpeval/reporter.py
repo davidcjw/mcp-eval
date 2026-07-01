@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 from mcpeval.runner import CaseResult, RunResult
 
@@ -52,7 +52,13 @@ class Reporter:
         table.add_column("Score", justify="right")
 
         for result in results:
-            score_style = "green" if result.overall_score >= 0.8 else "yellow" if result.overall_score >= 0.5 else "red"
+            score_style = (
+                "green"
+                if result.overall_score >= 0.8
+                else "yellow"
+                if result.overall_score >= 0.5
+                else "red"
+            )
             table.add_row(
                 result.model,
                 str(result.passed),

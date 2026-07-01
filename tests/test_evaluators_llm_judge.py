@@ -1,8 +1,10 @@
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator, LLMJudgeResult
+
+import pytest
+
 from mcpeval.capture import ToolCallRecord
+from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator
 
 
 def _mock_judge_response(score: float, reasoning: str):
@@ -114,6 +116,7 @@ async def test_evaluate_handles_markdown_wrapped_json():
     """Some models wrap JSON in ```json ... ``` code fences — must still parse."""
     judge = LLMJudgeEvaluator(criteria="x", model="m", api_key="test-key")
     import json as _json
+
     block = MagicMock()
     block.text = "```json\n" + _json.dumps({"score": 0.85, "reasoning": "Good job."}) + "\n```"
     response = MagicMock()

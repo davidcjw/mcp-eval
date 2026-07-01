@@ -1,21 +1,25 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from mcpeval.runner import EvalRunner, RunResult, CaseResult
-from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+
+import pytest
+
+from mcpeval.dataset import Case, EvalSuite, EvaluatorConfig, ExpectedGraph, GraphStep, MockToolDef
+from mcpeval.runner import EvalRunner, RunResult
 
 
 def _make_suite(cases: list[Case] | None = None) -> EvalSuite:
     if cases is None:
-        cases = [Case(
-            id="c001",
-            input="Do the thing",
-            expected_graph=ExpectedGraph(
-                steps=[GraphStep(tool="get_logs")],
-                max_steps=5,
-                must_terminate=True,
-            ),
-            evaluators=[EvaluatorConfig(type="graph_match", strict=False)],
-        )]
+        cases = [
+            Case(
+                id="c001",
+                input="Do the thing",
+                expected_graph=ExpectedGraph(
+                    steps=[GraphStep(tool="get_logs")],
+                    max_steps=5,
+                    must_terminate=True,
+                ),
+                evaluators=[EvaluatorConfig(type="graph_match", strict=False)],
+            )
+        ]
     return EvalSuite(
         name="Test Suite",
         model="claude-3-5-haiku-20241022",
@@ -162,6 +166,7 @@ async def test_run_suite_aggregates_scores():
 @pytest.mark.asyncio
 async def test_runner_saves_to_store(tmp_db_path):
     from mcpeval.store import ResultStore
+
     store = ResultStore(tmp_db_path)
     store.initialize()
 
@@ -180,7 +185,15 @@ async def test_runner_saves_to_store(tmp_db_path):
 @pytest.mark.asyncio
 async def test_run_suite_isolates_case_errors():
     """A crashing case does not prevent subsequent cases from running."""
-    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+    from mcpeval.dataset import (
+        Case,
+        EvalSuite,
+        EvaluatorConfig,
+        ExpectedGraph,
+        GraphStep,
+        MockToolDef,
+    )
+
     cases = [
         Case(
             id="crash",
@@ -227,22 +240,33 @@ async def test_run_suite_isolates_case_errors():
 
 @pytest.mark.asyncio
 async def test_run_case_wires_rule_evaluator():
-    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+    from mcpeval.dataset import (
+        Case,
+        EvalSuite,
+        EvaluatorConfig,
+        ExpectedGraph,
+        GraphStep,
+        MockToolDef,
+    )
 
     suite = EvalSuite(
         name="Rule Test",
         model="claude-3-5-haiku-20241022",
         mcp_server="test",
         mock_tools=[MockToolDef(name="get_logs", returns={})],
-        cases=[Case(
-            id="rule_case",
-            input="Do the thing",
-            expected_graph=ExpectedGraph(steps=[GraphStep(tool="get_logs")], must_terminate=True),
-            evaluators=[
-                EvaluatorConfig(type="graph_match"),
-                EvaluatorConfig(type="rule", checks=[{"contains": "done"}], threshold=0.7),
-            ],
-        )],
+        cases=[
+            Case(
+                id="rule_case",
+                input="Do the thing",
+                expected_graph=ExpectedGraph(
+                    steps=[GraphStep(tool="get_logs")], must_terminate=True
+                ),
+                evaluators=[
+                    EvaluatorConfig(type="graph_match"),
+                    EvaluatorConfig(type="rule", checks=[{"contains": "done"}], threshold=0.7),
+                ],
+            )
+        ],
     )
     runner = EvalRunner(anthropic_api_key="test-key")
 
@@ -260,22 +284,33 @@ async def test_run_case_wires_rule_evaluator():
 
 @pytest.mark.asyncio
 async def test_run_case_rule_failure_marks_not_passed():
-    from mcpeval.dataset import EvalSuite, MockToolDef, Case, ExpectedGraph, GraphStep, EvaluatorConfig
+    from mcpeval.dataset import (
+        Case,
+        EvalSuite,
+        EvaluatorConfig,
+        ExpectedGraph,
+        GraphStep,
+        MockToolDef,
+    )
 
     suite = EvalSuite(
         name="Rule Fail Test",
         model="claude-3-5-haiku-20241022",
         mcp_server="test",
         mock_tools=[MockToolDef(name="get_logs", returns={})],
-        cases=[Case(
-            id="rule_fail",
-            input="Do the thing",
-            expected_graph=ExpectedGraph(steps=[GraphStep(tool="get_logs")], must_terminate=True),
-            evaluators=[
-                EvaluatorConfig(type="graph_match"),
-                EvaluatorConfig(type="rule", checks=[{"contains": "IMPOSSIBLE_STRING_XYZ"}]),
-            ],
-        )],
+        cases=[
+            Case(
+                id="rule_fail",
+                input="Do the thing",
+                expected_graph=ExpectedGraph(
+                    steps=[GraphStep(tool="get_logs")], must_terminate=True
+                ),
+                evaluators=[
+                    EvaluatorConfig(type="graph_match"),
+                    EvaluatorConfig(type="rule", checks=[{"contains": "IMPOSSIBLE_STRING_XYZ"}]),
+                ],
+            )
+        ],
     )
     runner = EvalRunner(anthropic_api_key="test-key")
     responses = _mock_tool_use_then_end("get_logs", {})

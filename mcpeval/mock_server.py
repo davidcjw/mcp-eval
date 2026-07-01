@@ -1,10 +1,12 @@
 from __future__ import annotations
-from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
 
-from fastmcp import FastMCP, Client
-from fastmcp.tools.function_tool import FunctionTool
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Any
+
+from fastmcp import Client, FastMCP
 from fastmcp.tools.base import ToolResult
+from fastmcp.tools.function_tool import FunctionTool
 from pydantic import Field
 
 from mcpeval.capture import CaptureMiddleware
@@ -22,6 +24,7 @@ class _StubTool(FunctionTool):
 
 def _register_tools(server: FastMCP, tool_defs: list[MockToolDef]) -> None:
     for tdef in tool_defs:
+
         async def _placeholder() -> dict:
             return {}
 

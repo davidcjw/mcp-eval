@@ -1,9 +1,12 @@
 import pytest
+
+from mcpeval.runner import CaseResult, RunResult
 from mcpeval.store import ResultStore
-from mcpeval.runner import RunResult, CaseResult
 
 
-def _make_run(store: ResultStore, suite: str, score: float, case_scores: list[tuple[str, float]]) -> int:
+def _make_run(
+    store: ResultStore, suite: str, score: float, case_scores: list[tuple[str, float]]
+) -> int:
     case_results = [
         CaseResult(
             case_id=cid,

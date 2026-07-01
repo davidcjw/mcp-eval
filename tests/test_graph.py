@@ -1,5 +1,5 @@
-import pytest
-from mcpeval.dataset import ExpectedGraph, GraphStep as DatasetStep
+from mcpeval.dataset import ExpectedGraph
+from mcpeval.dataset import GraphStep as DatasetStep
 from mcpeval.graph import Step, ToolCallGraph
 
 
@@ -37,22 +37,26 @@ def test_toolcallgraph_from_expected():
 
 
 def test_toolcallgraph_required_steps():
-    graph = ToolCallGraph(steps=[
-        Step(tool="get_logs"),
-        Step(tool="run_playbook"),
-        Step(tool="notify_oncall", optional=True),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step(tool="get_logs"),
+            Step(tool="run_playbook"),
+            Step(tool="notify_oncall", optional=True),
+        ]
+    )
     required = graph.required_steps
     assert len(required) == 2
     assert all(not s.optional for s in required)
 
 
 def test_toolcallgraph_step_names():
-    graph = ToolCallGraph(steps=[
-        Step(tool="get_logs"),
-        Step(tool="run_playbook"),
-        Step(tool="notify_oncall"),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step(tool="get_logs"),
+            Step(tool="run_playbook"),
+            Step(tool="notify_oncall"),
+        ]
+    )
     assert graph.step_names == ["get_logs", "run_playbook", "notify_oncall"]
 
 

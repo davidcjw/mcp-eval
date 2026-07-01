@@ -1,7 +1,8 @@
 import pytest
+
 from mcpeval.capture import ToolCallRecord
+from mcpeval.evaluators.graph_match import GraphMatchEvaluator
 from mcpeval.graph import Step, ToolCallGraph
-from mcpeval.evaluators.graph_match import GraphMatchEvaluator, GraphMatchResult
 
 
 def _record(tool_name: str, arguments: dict | None = None, ts: float = 0.0) -> ToolCallRecord:
@@ -26,10 +27,12 @@ def test_missing_required_step():
 
 
 def test_optional_step_absent_still_passes():
-    graph = ToolCallGraph(steps=[
-        Step("get_logs"),
-        Step("notify_oncall", optional=True),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step("get_logs"),
+            Step("notify_oncall", optional=True),
+        ]
+    )
     calls = [_record("get_logs")]
     result = GraphMatchEvaluator().evaluate(calls, graph, terminated_cleanly=True)
     assert result.score == 1.0
@@ -53,10 +56,12 @@ def test_params_contain_mismatch():
 
 
 def test_must_follow_respected():
-    graph = ToolCallGraph(steps=[
-        Step("get_logs"),
-        Step("run_playbook", must_follow="get_logs"),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step("get_logs"),
+            Step("run_playbook", must_follow="get_logs"),
+        ]
+    )
     calls = [_record("get_logs", ts=0.0), _record("run_playbook", ts=1.0)]
     result = GraphMatchEvaluator().evaluate(calls, graph, terminated_cleanly=True)
     assert result.score == 1.0
@@ -64,10 +69,12 @@ def test_must_follow_respected():
 
 
 def test_must_follow_violated():
-    graph = ToolCallGraph(steps=[
-        Step("get_logs"),
-        Step("run_playbook", must_follow="get_logs"),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step("get_logs"),
+            Step("run_playbook", must_follow="get_logs"),
+        ]
+    )
     # run_playbook appears before get_logs
     calls = [_record("run_playbook", ts=0.0), _record("get_logs", ts=1.0)]
     result = GraphMatchEvaluator().evaluate(calls, graph, terminated_cleanly=True)
@@ -92,9 +99,15 @@ def test_terminate_penalty():
 
 
 def test_score_never_below_zero():
-    graph = ToolCallGraph(steps=[
-        Step("a"), Step("b"), Step("c"), Step("d"),
-    ], must_terminate=True)
+    graph = ToolCallGraph(
+        steps=[
+            Step("a"),
+            Step("b"),
+            Step("c"),
+            Step("d"),
+        ],
+        must_terminate=True,
+    )
     calls = []
     result = GraphMatchEvaluator(strict=True).evaluate(calls, graph, terminated_cleanly=False)
     assert result.score >= 0.0
@@ -108,10 +121,12 @@ def test_score_never_above_one():
 
 
 def test_all_optional_no_calls():
-    graph = ToolCallGraph(steps=[
-        Step("a", optional=True),
-        Step("b", optional=True),
-    ])
+    graph = ToolCallGraph(
+        steps=[
+            Step("a", optional=True),
+            Step("b", optional=True),
+        ]
+    )
     calls = []
     result = GraphMatchEvaluator().evaluate(calls, graph, terminated_cleanly=True)
     assert result.score == 1.0

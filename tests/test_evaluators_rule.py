@@ -1,5 +1,6 @@
 import pytest
-from mcpeval.evaluators.rule import RuleEvaluator, RuleResult
+
+from mcpeval.evaluators.rule import RuleEvaluator
 
 
 def test_contains_passes():
@@ -41,32 +42,32 @@ def test_regex_fails():
 
 
 def test_partial_score_below_threshold():
-    result = RuleEvaluator(
-        checks=[{"contains": "resolved"}, {"contains": "ticket"}]
-    ).evaluate("Issue resolved.")
+    result = RuleEvaluator(checks=[{"contains": "resolved"}, {"contains": "ticket"}]).evaluate(
+        "Issue resolved."
+    )
     assert result.score == pytest.approx(0.5)
     assert result.passed is False  # 0.5 < default threshold 0.7
 
 
 def test_custom_threshold():
-    result = RuleEvaluator(
-        checks=[{"contains": "a"}, {"contains": "b"}], threshold=0.5
-    ).evaluate("only a here")
+    result = RuleEvaluator(checks=[{"contains": "a"}, {"contains": "b"}], threshold=0.5).evaluate(
+        "only a here"
+    )
     assert result.score == pytest.approx(0.5)
     assert result.passed is True  # 0.5 >= 0.5
 
 
 def test_strict_requires_all_checks():
-    result = RuleEvaluator(
-        checks=[{"contains": "a"}, {"contains": "b"}], strict=True
-    ).evaluate("only a here")
+    result = RuleEvaluator(checks=[{"contains": "a"}, {"contains": "b"}], strict=True).evaluate(
+        "only a here"
+    )
     assert result.passed is False
 
 
 def test_strict_all_pass():
-    result = RuleEvaluator(
-        checks=[{"contains": "a"}, {"contains": "b"}], strict=True
-    ).evaluate("a and b here")
+    result = RuleEvaluator(checks=[{"contains": "a"}, {"contains": "b"}], strict=True).evaluate(
+        "a and b here"
+    )
     assert result.passed is True
 
 

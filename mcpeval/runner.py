@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import json
 import os
 from dataclasses import dataclass, field
@@ -6,11 +7,11 @@ from typing import Any
 
 from anthropic import AsyncAnthropic
 
-from mcpeval.dataset import EvalSuite, Case, EvaluatorConfig
-from mcpeval.mock_server import MockMCPServer
 from mcpeval.capture import CaptureMiddleware
-from mcpeval.graph import ToolCallGraph
+from mcpeval.dataset import Case, EvalSuite, EvaluatorConfig
 from mcpeval.evaluators.graph_match import GraphMatchEvaluator
+from mcpeval.graph import ToolCallGraph
+from mcpeval.mock_server import MockMCPServer
 
 
 @dataclass
@@ -81,7 +82,8 @@ class EvalRunner:
         # overall_score uses graph_match_score only; rule/llm_judge scores inform per-case passed but not this aggregate
         overall_score = (
             sum(cr.graph_match_score for cr in case_results) / len(case_results)
-            if case_results else 0.0
+            if case_results
+            else 0.0
         )
 
         result = RunResult(
@@ -163,7 +165,9 @@ class EvalRunner:
 
             if response.stop_reason == "end_turn":
                 terminated_cleanly = True
-                text_blocks = [b for b in response.content if hasattr(b, "type") and b.type == "text"]
+                text_blocks = [
+                    b for b in response.content if hasattr(b, "type") and b.type == "text"
+                ]
                 raw_output = text_blocks[-1].text if text_blocks else ""
                 break
 
@@ -177,11 +181,13 @@ class EvalRunner:
                         result_text = _mcp_result_to_str(mcp_result)
                     except Exception as e:
                         result_text = f"Error: {e}"
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result_text,
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result_text,
+                        }
+                    )
 
                 messages.append({"role": "assistant", "content": response.content})
                 messages.append({"role": "user", "content": tool_results})
@@ -202,6 +208,7 @@ class EvalRunner:
         for ecfg in case.evaluators:
             if ecfg.type == "rule" and ecfg.checks is not None:
                 from mcpeval.evaluators.rule import RuleEvaluator
+
                 rule_eval = RuleEvaluator(
                     checks=ecfg.checks,
                     strict=ecfg.strict,
@@ -212,6 +219,7 @@ class EvalRunner:
                 rule_passed = rule_result.passed
             elif ecfg.type == "llm_judge" and ecfg.criteria is not None:
                 from mcpeval.evaluators.llm_judge import LLMJudgeEvaluator
+
                 judge = LLMJudgeEvaluator(
                     criteria=ecfg.criteria,
                     model=ecfg.judge_model or suite.model,
@@ -236,12 +244,10 @@ class EvalRunner:
             case_id=case.id,
             passed=passed,
             tool_calls_made=[
-                {"tool_name": r.tool_name, "arguments": r.arguments}
-                for r in capture.calls
+                {"tool_name": r.tool_name, "arguments": r.arguments} for r in capture.calls
             ],
             tool_calls_expected=[
-                {"tool": s.tool, "params_contain": s.params_contain}
-                for s in graph.steps
+                {"tool": s.tool, "params_contain": s.params_contain} for s in graph.steps
             ],
             graph_match_score=graph_result.score,
             llm_judge_score=llm_judge_score,

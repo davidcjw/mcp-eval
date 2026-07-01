@@ -1,7 +1,7 @@
 import pytest
-import time
-from fastmcp import FastMCP, Client
-from mcpeval.capture import CaptureMiddleware, ToolCallRecord
+from fastmcp import Client, FastMCP
+
+from mcpeval.capture import CaptureMiddleware
 
 
 @pytest.mark.asyncio
